@@ -10,9 +10,14 @@ class DBOperations:
 
     def __init__(self):
         try:
+            # Establish initial connection to SQLite database
             self.conn = sqlite3.connect(DB)
             self.cur = self.conn.cursor()
+
+            # Enable foreign key constraints
             self.conn.execute("PRAGMA foreign_keys = ON")
+
+            # Create tables and insert sample data
             self._create_tables()
             self._insert_sample_data()
             self.conn.commit()
@@ -22,6 +27,7 @@ class DBOperations:
             self.conn.close()
 
     def get_connection(self):
+        # Opens a new connection whenever a method is called
         self.conn = sqlite3.connect(DB)
         self.conn.execute("PRAGMA foreign_keys = ON")
         self.cur = self.conn.cursor()
@@ -30,6 +36,9 @@ class DBOperations:
     # CREATING THE TABLES
     # -----------------------------------------------------
     def _create_tables(self):
+        # Creates all required database tables if they do not exist
+        # These create structure and define the relationships
+
         self.cur.executescript("""
             CREATE TABLE IF NOT EXISTS airports (
                 airport_id   INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,13 +99,16 @@ class DBOperations:
             );
         """)
 
-    # -----------------------------------------------------
+    # -------------------------------------------------------------------
     # INSERTING DATA
-    # The Data is generated with the help of AI
+    # The Data generated with the help of Claude Code AI (Anthropic,2026)
     # This data is only a simulation and not real data
-    # -----------------------------------------------------
+    # -------------------------------------------------------------------
     def _insert_sample_data(self):
+        # Inserts sample data into tables (only if empty)
+
         # airports
+        # Checks if airports table already has data
         self.cur.execute("SELECT COUNT(*) FROM airports")
         if self.cur.fetchone()[0] == 0:
             airports = [
@@ -117,6 +129,7 @@ class DBOperations:
                 ("Istanbul Airport",            "IST", "Istanbul",     "Turkey"),
             ]
             self.cur.executemany(
+                # Insert airport data
                 "INSERT INTO airports (airport_name, iata_code, city, country) VALUES (?,?,?,?)",
                 airports
             )
@@ -375,12 +388,14 @@ class DBOperations:
     def view_all_flights(self):
         try:
             self.get_connection()
+
+            # SQL query to retrieve all flights with airport codes
             self.cur.execute("""
                 SELECT f.flight_id, f.flight_number,
                        a1.iata_code, a2.iata_code,
                        f.departure_datetime, f.arrival_datetime, f.status
                 FROM flights f
-                JOIN airports a1 ON f.departure_airport = a1.airport_id
+                JOIN airports a1 ON f.departure_airport = a1.airport_id 
                 JOIN airports a2 ON f.arrival_airport   = a2.airport_id
                 ORDER BY f.departure_datetime
             """)
@@ -429,6 +444,7 @@ class DBOperations:
         try:
             self.get_connection()
 
+            # Takes user input and inserts a new flight into database
             self.cur.execute("SELECT aircraft_id, model FROM aircraft")
             print("\n  Aircraft:")
             for r in self.cur.fetchall():
@@ -488,6 +504,8 @@ class DBOperations:
             self.get_connection()
             fid = int(input("  Flight ID: "))
             status = input("  New status (scheduled/departed/landed/delayed/cancelled): ")
+
+            # Updates flight status (e.g. scheduled, delayed, landed)
             self.cur.execute(
                 "UPDATE flights SET status=? WHERE flight_id=?", (status, fid))
             self.conn.commit()
@@ -501,6 +519,8 @@ class DBOperations:
         try:
             self.get_connection()
             fid = int(input("  Flight ID to delete: "))
+
+            # Deletes a specific flight using its ID
             self.cur.execute("DELETE FROM flights WHERE flight_id=?", (fid,))
             self.conn.commit()
             print(f"  {self.cur.rowcount} row(s) deleted." if self.cur.rowcount else "  Not found.")
@@ -728,6 +748,8 @@ class DBOperations:
     def flights_per_destination(self):
         try:
             self.get_connection()
+
+            # SQL query to count number of flights per destination
             self.cur.execute("""
                 SELECT a.city, a.iata_code, COUNT(f.flight_id) AS total
                 FROM flights f
@@ -860,8 +882,11 @@ class DBOperations:
 # =============================================
 
 def flights_menu(db):
+    # Displays menu options for flight operations
+
     while True:
         print("\n  --- Manage Flights ---")
+         # Calls different DB methods based on user selected choice
         print("  1. View all flights")
         print("  2. Search flight by ID")
         print("  3. Add a new flight")
@@ -981,9 +1006,10 @@ def reports_menu(db):
 # The main function parses arguments
 # =============================================
 
-db = DBOperations()
+db = DBOperations() # Initialize database
 
 while True:
+    # Displays main menu and handles user navigation
     print("\n========================================")
     print("      FLIGHT MANAGEMENT SYSTEM")
     print("========================================")
